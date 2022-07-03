@@ -1,0 +1,58 @@
+#include <LPC17xx.H>
+
+void delay(uint32_t i)
+	{
+     uint32_t x;
+    for(x=0;x<=i;x++);
+  }		
+
+	
+	void UART1_TXD1(unsigned char);
+void UART1_init()
+{
+	LPC_SC->PCONP |=((1<<4) | (1<<15)); //enable power to UART1 & IOCON
+	LPC_PINCON->PINSEL4 |=(2<<0) | (2<<2); //p2.0 & p2.1  as TXD1 and RXD1
+	
+	LPC_UART1->LCR = 0x83; //8 bits, no parity, 1 stop bit
+	LPC_UART1->DLL = 9; //115200 baud rate at 25 MHz PCLK
+  LPC_UART1->FDR = 0x21; //FR 1,507, DIVADDVAL=1,MULVAL=2
+	LPC_UART1->DLM = 0; //High divisor latch = 0
+	LPC_UART1->LCR = 0x03; //DLAB =0
+  //LPC_UART1->FCR = 0x07; 
+}
+
+
+void UART1_TXD1(unsigned char ch)
+{
+	  LPC_UART1->THR=ch;
+	  while(!(LPC_UART1->LSR & 0x20)); //wait till character transmitted
+	
+}
+
+unsigned char UART1_RXD1(void)  
+{
+	unsigned char a;
+	while (!(LPC_UART1->LSR & 0x01));			 //wait till character recieved 
+	a=LPC_UART1->RBR;
+	return (a);
+}
+
+int main()
+{ 
+	LPC_GPIO1->FIODIR |=(1<<28);
+	unsigned char b;
+	UART1_init();
+	while(1)
+	{
+	b=UART1_RXD1();  
+	UART1_TXD1(b);	
+	if(b=='a')
+	{
+		LPC_GPIO1->FIOSET |=(1<<28); 
+	}
+	if(b=='b') 
+	{
+		LPC_GPIO1->FIOCLR |=(1<<28); 
+	}
+}}
+	
